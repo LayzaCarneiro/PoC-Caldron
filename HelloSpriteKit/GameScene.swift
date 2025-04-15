@@ -1,7 +1,7 @@
 import SpriteKit
 
 class GameScene: SKScene {
-    private var ingredientCopy: SKShapeNode?
+    private var ingredientCopy: SKSpriteNode?
     private var caldron: SKShapeNode!
     private var countIngredients = 0
     
@@ -57,15 +57,14 @@ class GameScene: SKScene {
         addChild(clearButton)
         
         // Ingredientes
-        let colors: [UIColor] = [.red, .blue, .green]
-        let spacing: CGFloat = 100
-        for (index, color) in colors.enumerated() {
-            let circle = SKShapeNode(circleOfRadius: 30)
-            circle.fillColor = color
-            circle.strokeColor = .black
-            circle.position = CGPoint(x: frame.width - CGFloat(index + 1) * spacing, y: 100)
-            circle.name = "item"
-            addChild(circle)
+        let ingredients: [String] = ["circle", "square", "star", "heart"]
+        let spacing: CGFloat = 70
+        for (index, ingredientName) in ingredients.enumerated() {
+            let sprite = SKSpriteNode(imageNamed: ingredientName)
+            sprite.name = "item"
+            sprite.size = CGSize(width: 50, height: 50)
+            sprite.position = CGPoint(x: frame.width - CGFloat(index + 1) * spacing, y: 100)
+            addChild(sprite)
         }
     }
     
@@ -82,11 +81,11 @@ class GameScene: SKScene {
         guard countIngredients < 2 else { return } // limita a dois ingredientes selecionados
         
         guard let node = nodes(at: location).first(where: { $0.name == "item" }),
-              let shape = node as? SKShapeNode else { return }
+              let shape = node as? SKSpriteNode else { return }
         
-        let copy = SKShapeNode(circleOfRadius: shape.frame.width / 2)
-        copy.fillColor = shape.fillColor
-        copy.strokeColor = shape.strokeColor
+        let texture = (node as? SKSpriteNode)?.texture
+        let copy = SKSpriteNode(texture: texture)
+        copy.size = CGSize(width: 60, height: 60)
         copy.position = location
         copy.name = "copy"
         copy.physicsBody = SKPhysicsBody(circleOfRadius: shape.frame.width / 2)
@@ -133,6 +132,12 @@ class GameScene: SKScene {
             let dx = caldron.position.x - node.position.x
             let dy = caldron.position.y - node.position.y
             let distance = hypot(dx, dy)
+            
+            if distance > 300 {
+                node.removeFromParent()
+                countIngredients -= 1
+                continue
+            }
             
             if distance < 20 {
                 body.velocity.dx *= 0.9
