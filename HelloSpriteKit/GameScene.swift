@@ -3,6 +3,7 @@ import SpriteKit
 class GameScene: SKScene {
     private var ingredientCopy: SKShapeNode?
     private var caldron: SKShapeNode!
+    private var countIngredients = 0
     
     enum BitMask: UInt32 {
         case mask1 = 1
@@ -74,8 +75,11 @@ class GameScene: SKScene {
         if let node = nodes(at: location).first(where: { $0.name == "clearButton" }) {
             // Remove todas as cópias
             children.filter { $0.name == "copy" }.forEach { $0.removeFromParent() }
+            countIngredients = 0
             return
         }
+        
+        guard countIngredients < 2 else { return } // limita a dois ingredientes selecionados
         
         guard let node = nodes(at: location).first(where: { $0.name == "item" }),
               let shape = node as? SKShapeNode else { return }
@@ -97,6 +101,7 @@ class GameScene: SKScene {
         copy.run(scaleUp)
         
         ingredientCopy = copy
+        countIngredients += 1
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
