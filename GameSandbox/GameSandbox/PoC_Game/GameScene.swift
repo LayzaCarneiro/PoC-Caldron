@@ -1,9 +1,14 @@
 import SpriteKit
 
 class GameScene: SKScene {
+    var pedido: Pedido?
+    var onCompatibilidadeCalculada: ((Double) -> Void)?
+
     private var ingredientCopy: SKSpriteNode?
     private var caldron: SKShapeNode!
     private var countIngredients = 0
+    
+    private var ingredientsInCaldron: Set<String> = []
     
     enum BitMask: UInt32 {
         case mask1 = 1
@@ -75,15 +80,17 @@ class GameScene: SKScene {
             // Remove todas as cópias
             children.filter { $0.name == "copy" }.forEach { $0.removeFromParent() }
             countIngredients = 0
+            ingredientsInCaldron.removeAll()
             return
         }
-        
+         
         guard countIngredients < 2 else { return } // limita a dois ingredientes selecionados
         
         guard let node = nodes(at: location).first(where: { $0.name == "item" }),
               let shape = node as? SKSpriteNode else { return }
-        
-        let texture = (node as? SKSpriteNode)?.texture
+
+        let ingredientName = ingredientName(from: shape.texture)
+        let texture = shape.texture
         let copy = SKSpriteNode(texture: texture)
         copy.size = CGSize(width: 60, height: 60)
         copy.position = location
@@ -93,6 +100,8 @@ class GameScene: SKScene {
         copy.physicsBody?.fieldBitMask = 0
         copy.physicsBody?.categoryBitMask = BitMask.mask1.rawValue
         copy.physicsBody?.collisionBitMask = BitMask.mask2.rawValue
+        copy.userData = NSMutableDictionary()
+        copy.userData?["ingredientName"] = ingredientName
         addChild(copy)
         
         let scaleUp = SKAction.scale(to: 1.4, duration: 0.2)
@@ -111,6 +120,17 @@ class GameScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let node = ingredientCopy else { return }
         
+        let dx = caldron.position.x - node.position.x
+        let dy = caldron.position.y - node.position.y
+        let distance = hypot(dx, dy)
+
+        if distance > 200 {
+            node.removeFromParent()
+            countIngredients -= 1
+            ingredientCopy = nil
+            return
+        }
+        
         node.physicsBody = SKPhysicsBody(circleOfRadius: node.frame.width / 2)
         node.physicsBody?.affectedByGravity = false
         node.physicsBody?.isDynamic = true
@@ -121,7 +141,7 @@ class GameScene: SKScene {
         let scaleBack = SKAction.scale(to: 1.0, duration: 0.2)
         scaleBack.timingMode = .easeIn
         node.run(scaleBack)
-        
+                
         ingredientCopy = nil
     }
     
@@ -132,14 +152,14 @@ class GameScene: SKScene {
             let dx = caldron.position.x - node.position.x
             let dy = caldron.position.y - node.position.y
             let distance = hypot(dx, dy)
-            
-            if distance > 300 {
-                node.removeFromParent()
-                countIngredients -= 1
-                continue
-            }
-            
-            if distance < 20 {
+
+//            if distance > 240 {
+//                node.removeFromParent()
+//                countIngredients -= 1
+//                continue
+//            }
+                        
+            if distance < 80 {
                 body.velocity.dx *= 0.9
                 body.velocity.dy *= 0.9
                 body.fieldBitMask = 0
@@ -147,13 +167,28 @@ class GameScene: SKScene {
                 node.position.x += dx * 0.1
                 node.position.y += dy * 0.1
                 
-                if distance < 1 {
+                if distance < 60 {
                     body.velocity = .zero
                     body.angularVelocity = 0
                     body.isDynamic = false
                     node.position = caldron.position
+                    
+                    if let name = node.userData?["ingredientName"] as? String {
+                        ingredientsInCaldron.insert(name)
+                        
+                        if ingredientsInCaldron.count == 2 {
+                            ingredientesForamSelecionados(ingredientsInCaldron.sorted()[0], ingredientsInCaldron.sorted()[1])
+                        }
+                    }
                 }
             }
         }
+    }
+    
+    func ingredientesForamSelecionados(_ ing1: String, _ ing2: String) {
+        guard let pedido = pedido else { return }
+        let resultado = calcularCompatibilidade(nomeIngrediente1: ing1, nomeIngrediente2: ing2, pedido: pedido)
+        print(resultado)
+        onCompatibilidadeCalculada?(resultado)
     }
 }

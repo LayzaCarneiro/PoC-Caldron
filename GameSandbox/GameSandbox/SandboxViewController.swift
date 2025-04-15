@@ -1,16 +1,31 @@
 import UIKit
 import SpriteKit
 
-class GameViewController: UIViewController {
-
-    let scene = GameScene()
+class SandboxViewController: UIViewController {
+            
+    let scene: SKScene
     
     let skView = SKView()
     
+    init(scene: SKScene) {
+        self.scene = scene
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+        
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .black
         setupSKView()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        scene.scaleMode = .resizeFill
+        skView.presentScene(scene)
     }
     
     private func setupSKView() {
@@ -26,12 +41,7 @@ class GameViewController: UIViewController {
         skView.showsNodeCount = true
         skView.showsPhysics = true
     }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        scene.scaleMode = .resizeFill
-        skView.presentScene(scene)
-    }
 
 }
+
 
